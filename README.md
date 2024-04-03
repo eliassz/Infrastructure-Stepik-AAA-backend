@@ -11,3 +11,6 @@
 1. установить VS Code на свою машину
 2. установить в VS Code расширение "Remote - SSH" - [инструкция](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) (раздел "Getting started")
 3. открыть проект в VS Code через Remote SSH
+
+### Как запуститить решение
+...
