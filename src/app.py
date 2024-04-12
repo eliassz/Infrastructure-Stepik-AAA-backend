@@ -15,18 +15,21 @@ image_client = ImageClient(host=IMAGE_HOST)
 
 def validate_id(im_id):
     if im_id is None:
-        logging.error('Field "image_ids" is not specified')
-        return None, 400
+        error = 'Field "image_ids" is not specified'
+        logging.error(error)
+        return jsonify({'result': error, 'status': 400})
 
     try:
         im_id = int(im_id)
     except (TypeError, ValueError):
-        logging.error('Invalid image ID')
-        return None, 400
+        error = 'Invalid image ID'
+        logging.error(error)
+        return jsonify({'result': error, 'status': 400})
 
     if im_id not in IDS:
-        logging.error('There is no such id, try 10022, 9965')
-        return None, 400
+        error = 'There is no such id, try 10022, 9965'
+        logging.error(error)
+        return jsonify({'result': error, 'status': 400})
 
 
 # curl http://localhost:8080/get_one_plate?im_id=10022
