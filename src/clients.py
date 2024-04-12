@@ -38,14 +38,17 @@ class ImageClient:
             return io.BytesIO(image_bytes), 200
         except requests.HTTPError as e:
             status_code = e.response.status_code
-            logging.error(f"HTTP error ({status_code}) occurred: {e}")
-            return None, status_code
+            error = f'HTTP error ({status_code}) occurred: {e}'
+            logging.error(error)
+            return error, status_code
         except requests.RequestException as e:
-            logging.error("Network-related error occurred: %s", str(e))
-            return None, 503
+            error = f"Network-related error occurred: {str(e)}"
+            logging.error(error)
+            return error, 503
         except Exception as e:
-            logging.error("Unexpected error occurred: %s", str(e))
-            return None, 500
+            error = f"Unexpected error occurred: {str(e)}"
+            logging.error(error)
+            return error, 500
 
 
 if __name__ == '__main__':
