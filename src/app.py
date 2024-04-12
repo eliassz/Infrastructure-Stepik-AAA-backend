@@ -1,50 +1,52 @@
 import logging
 from flask import Flask, request
 from models.plate_reader import PlateReader, InvalidImage
-import logging
-import io
+from clients import ImageClient
 
+IDS = set(10022, 9965)
+
+PATH_TO_MODEL = './model_weights/plate_reader_model.pth'
+IMAGE_HOST = 'http://178.154.220.122:7777/images/'
 
 app = Flask(__name__)
-plate_reader = PlateReader.load_from_file('./model_weights/plate_reader_model.pth')
+plate_reader = PlateReader.load_from_file(PATH_TO_MODEL)
+image_client = ImageClient(host=IMAGE_HOST)
 
 
-@app.route('/')
-def hello():
-    user = request.args['user']
-    return f'<h1 style="color:red;"><center>Hello {user}!</center></h1>'
-
-
-# <url>:8080/greeting?user=me
-# <url>:8080 : body: {"user": "me"}
-# -> {"result": "Hello me"}
-@app.route('/greeting', methods=['POST'])
-def greeting():
-    if 'user' not in request.json:
-        return {'error': 'field "user" not found'}, 400
-
-    user = request.json['user']
-    return {
-        'result': f'Hello {user}',
-    }
-
-
-# <url>:8080/readPlateNumber : body <image bytes>
-# {"plate_number": "c180mv ..."}
-@app.route('/readPlateNumber', methods=['POST'])
-def read_plate_number():
-    im = request.get_data()
-    im = io.BytesIO(im)
+def validate_id(im_id):
+    if im_id is None:
+        logging.error('Field "image_ids" is not specified')
+        return None, 400
 
     try:
-        res = plate_reader.read_text(im)
+        im_id = int(im_id)
+    except (TypeError, ValueError):
+        logging.error('Invalid image ID')
+        return None, 400
+
+    if im_id not in IDS:
+        logging.error('There is no such id, try 10022, 9965')
+        return None, 400
+
+
+# curl http://localhost:8080/get_one_plate?im_id=10022
+@app.route('/get_multiples_plates')
+def get_one_plates():
+    im_id = request.args.get('im_id')
+
+    validate_id(im_id)
+
+    image_bytes, status = image_client.get_image(im_id)
+
+    if status != 200:
+        return image_bytes, status
+    try:
+        res = plate_reader.read_text(image_bytes)
     except InvalidImage:
         logging.error('invalid image')
         return {'error': 'invalid image'}, 400
 
-    return {
-        'plate_number': res,
-    }
+    return {'plate_number': res}, 200
 
 
 if __name__ == '__main__':
