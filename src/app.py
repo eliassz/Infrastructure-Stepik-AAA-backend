@@ -46,7 +46,7 @@ def get_one_plate():
     try:
         res = plate_reader.read_text(image_bytes)
     except InvalidImage:
-        error = 'invalid image'
+        error = 'Invalid image'
         logging.error(error)
         return jsonify({'result': error, 'status': 400})
 
