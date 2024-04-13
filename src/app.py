@@ -15,7 +15,7 @@ image_client = ImageClient(host=IMAGE_HOST)
 
 def base_validate_id(im_id):
     if im_id is None:
-        error = 'Field "image_ids" is not specified'
+        error = 'Field "image_id" is not specified'
         logging.error(error)
         return error, 400
     return im_id, 200
