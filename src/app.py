@@ -13,23 +13,29 @@ plate_reader = PlateReader.load_from_file(PATH_TO_MODEL)
 image_client = ImageClient(host=IMAGE_HOST)
 
 
-def validate_id(im_id):
+def base_validate_id(im_id):
     if im_id is None:
         error = 'Field "image_ids" is not specified'
         logging.error(error)
-        return jsonify({'result': error, 'status': 400})
+        return error, 400
+    return im_id, 200
 
+
+def advanced_validate_id(im_id):
+    logging.info(f'Start of advanced validation of {im_id}')
     try:
         im_id = int(im_id)
     except (TypeError, ValueError):
         error = 'Invalid image ID'
         logging.error(error)
-        return jsonify({'result': error, 'status': 400})
+        return error, 400
 
     if im_id not in IDS:
         error = 'There is no such id, try 10022, 9965'
         logging.error(error)
-        return jsonify({'result': error, 'status': 400})
+        return error, 400
+
+    return im_id, 200
 
 
 # curl http://localhost:8080/get_one_plate?im_id=10022
@@ -37,7 +43,15 @@ def validate_id(im_id):
 def get_one_plate():
     im_id = request.args.get('im_id')
 
-    validate_id(im_id)
+    result, status = base_validate_id(im_id)
+
+    if status != 200:
+        return jsonify({'result': result, 'status': status})
+
+    result, status = advanced_validate_id(im_id)
+
+    if status != 200:
+        return jsonify({'result': result, 'status': status})
 
     image_bytes, status = image_client.get_image(im_id)
 
@@ -51,6 +65,43 @@ def get_one_plate():
         return jsonify({'result': error, 'status': 400})
 
     return jsonify({'result': res, 'status': 200})
+
+
+# curl "http://localhost:8080/get_multiple_plates?im_id=10022,9965"
+@app.route('/get_multiple_plates')
+def get_multiple_plates():
+    im_ids = request.args.get('im_id')
+
+    result, status = base_validate_id(im_ids)
+
+    if status != 200:
+        return jsonify({'result': result, 'status': status})
+
+    im_ids = im_ids.split(',')
+
+    answers = {}
+    for im_id in im_ids:
+        result, status = advanced_validate_id(im_id)
+        if status != 200:
+            answers[im_id] = f'{status}, {result}'
+            continue
+
+        image_bytes, status = image_client.get_image(im_id)
+
+        if status != 200:
+            logging.error(f'{im_id}: {status} {image_bytes}')
+            answers[im_id] = f'{status}, {image_bytes}'
+            continue
+
+        try:
+            res = plate_reader.read_text(image_bytes)
+            answers[im_id] = res
+        except InvalidImage:
+            error = 'Invalid image'
+            logging.error(error)
+            answers[im_id] = f'{im_id}: {404}, {error}'
+
+    return jsonify(answers)
 
 
 if __name__ == '__main__':
