@@ -36,18 +36,18 @@ class ImageClient:
             response.raise_for_status()
             image_bytes = response.content
             return io.BytesIO(image_bytes), 200
-    
+
         except requests.HTTPError as e:
             status_code = e.response.status_code
             error = f"HTTP error ({status_code}) occurred: {e}"
             logging.error(error)
             return error, status_code
-    
+
         except requests.RequestException as e:
             error = f"Network-related error occurred: {str(e)}"
             logging.error(error)
             return error, 503
-        
+
         except Exception as e:
             error = f"Unexpected error occurred: {str(e)}"
             logging.error(error)
